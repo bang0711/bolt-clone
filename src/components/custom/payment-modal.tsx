@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 
 type Props = {
   isClientSecretCreated: boolean;
@@ -32,6 +32,9 @@ function PaymentModal({
 }: Props) {
   const stripe = useStripe();
   const elements = useElements();
+
+  const [message, setMessage] = useState<string | undefined>("");
+  const [isLoading, setIsLoading] = useState(false);
 
   // Handle card payment submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -75,8 +78,6 @@ function PaymentModal({
 
     setIsLoading(false);
   };
-  const [message, setMessage] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   return (
     <Dialog
