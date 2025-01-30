@@ -7,6 +7,7 @@ export const createUser = mutation({
     email: v.string(),
     picture: v.string(),
     id: v.string(),
+    customerId: v.string(),
   },
   handler: async (ctx, args) => {
     // If user already exists, return the user
@@ -23,6 +24,8 @@ export const createUser = mutation({
         picture: args.picture,
         id: args.id,
         token: 50000,
+        customerId: args.customerId,
+        plan: 1,
       });
 
       return {
@@ -31,6 +34,7 @@ export const createUser = mutation({
         email: args.email,
         picture: args.picture,
         id: args.id,
+        customerId: args.customerId,
       };
     }
 
@@ -56,10 +60,12 @@ export const updateToken = mutation({
   args: {
     token: v.number(),
     userId: v.id("users"),
+    plan: v.number(),
   },
   handler: async (ctx, args) => {
     const res = await ctx.db.patch(args.userId, {
       token: args.token,
+      plan: args.plan,
     });
 
     return res;

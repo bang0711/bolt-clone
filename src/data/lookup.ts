@@ -84,7 +84,8 @@ export const PRICING_OPTIONS = [
     tokens: "50K",
     value: 50000,
     desc: "Ideal for hobbyists and casual users for light, exploratory use.",
-    price: 4.99,
+    price: 0.5,
+    plan: 1,
   },
   {
     name: "Starter",
@@ -92,6 +93,7 @@ export const PRICING_OPTIONS = [
     value: 120000,
     desc: "Designed for professionals who need to use Bolt a few times per week.",
     price: 9.99,
+    plan: 2,
   },
   {
     name: "Pro",
@@ -99,6 +101,7 @@ export const PRICING_OPTIONS = [
     value: 2500000,
     desc: "Designed for professionals who need to use Bolt a few times per week.",
     price: 19.99,
+    plan: 3,
   },
   {
     name: "Unlimited (License)",
@@ -106,5 +109,6 @@ export const PRICING_OPTIONS = [
     value: 999999999,
     desc: "Designed for professionals who need to use Bolt a few times per week.",
     price: 49.99,
+    plan: 4,
   },
 ];

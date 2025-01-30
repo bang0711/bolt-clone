@@ -16,6 +16,7 @@ import {
 import { Dispatch, SetStateAction } from "react";
 
 import { useGoogleLogin } from "@react-oauth/google";
+
 import axios from "axios";
 
 import { useMutation } from "convex/react";
@@ -24,6 +25,7 @@ import { api } from "../../../convex/_generated/api";
 import uuid4 from "uuid4";
 
 import { setCookie } from "@/lib/auth";
+import { createCustomer } from "@/lib/payment";
 
 type Props = {
   open: boolean;
@@ -42,11 +44,14 @@ function SignInDialog({ open, setIsOpenDialog }: Props) {
 
       const user = userInfo.data;
 
+      const customerId = await createCustomer(user.email, user.name);
+
       const res = await createUser({
         name: user.name,
         email: user.email,
         picture: user.picture,
         id: uuid4(),
+        customerId,
       });
 
       const { _id, email, id } = res;

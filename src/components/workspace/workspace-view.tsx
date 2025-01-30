@@ -52,6 +52,7 @@ function WorkspaceView({ chat, user }: Props) {
       updateToken({
         userId: user._id as Id<"users">,
         token: tokenLeft,
+        plan: user.plan,
       });
       updateFiles({
         workspaceId: chat._id as Id<"workspace">,

@@ -12,6 +12,8 @@ import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 
 import { Button } from "../ui/button";
+import { createCustomer } from "@/lib/payment";
+import { useMemo } from "react";
 
 function LoginButton() {
   const createUser = useMutation(api.users.createUser);
@@ -25,11 +27,14 @@ function LoginButton() {
 
       const user = userInfo.data;
 
+      const customerId = await createCustomer(user.email, user.name);
+
       const res = await createUser({
         name: user.name,
         email: user.email,
         picture: user.picture,
         id: uuid4(),
+        customerId,
       });
 
       const { _id, email, id } = res;
@@ -39,7 +44,11 @@ function LoginButton() {
     },
     onError: (errorResponse) => console.error(errorResponse),
   });
-  return <Button onClick={() => googleLogin()}>Get Started</Button>;
+
+  return useMemo(
+    () => <Button onClick={() => googleLogin()}>Get Started</Button>,
+    [googleLogin],
+  );
 }
 
 export default LoginButton;

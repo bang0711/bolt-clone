@@ -8,6 +8,8 @@ export default defineSchema({
     picture: v.string(),
     id: v.string(),
     token: v.number(),
+    customerId: v.string(),
+    plan: v.number(),
   }),
 
   workspace: defineTable({

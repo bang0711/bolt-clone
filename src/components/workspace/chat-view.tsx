@@ -73,6 +73,7 @@ function ChatView({ chat, user, generateFiles, messages, setMessages }: Props) {
       updateToken({
         userId: user._id as Id<"users">,
         token: tokenLeft,
+        plan: user.plan,
       });
       // Update messages with the AI response
       setMessages((prev) => [...prev, AIResponse]);

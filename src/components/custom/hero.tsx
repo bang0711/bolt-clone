@@ -30,7 +30,7 @@ import { countToken } from "@/lib/utils";
 
 type Props = {
   isAuthenticated: boolean;
-  userCookie?: User;
+  userCookie: User | undefined;
 };
 
 function Hero({ isAuthenticated, userCookie }: Props) {
@@ -90,6 +90,7 @@ function Hero({ isAuthenticated, userCookie }: Props) {
         updateToken({
           token: tokenLeft,
           userId: userCookie?._id as Id<"users">,
+          plan: userCookie?.plan as number,
         }),
         updateFiles({
           workspaceId: workspaceId,

@@ -2,50 +2,88 @@
 
 import Stripe from "stripe";
 
-// let stripePromise: Promise<Stripe | null>;
-// export const getStripe = () => {
-//   if (!stripePromise) {
-//     stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-//   }
-//   return stripePromise;
-// };
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+export const createCustomer = async (email: string, name: string) => {
+  const customer = await stripe.customers.create({
+    email,
+    name,
+  });
+
+  return customer.id;
+};
 
 export const generateClientSecret = async (amount: number) => {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
   const paymentIntent = await stripe.paymentIntents.create({
     amount,
     currency: "usd",
+    setup_future_usage: "off_session",
+    automatic_payment_methods: {
+      enabled: true,
+    },
   });
   return paymentIntent.client_secret;
 };
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-export const checkout = async (amount: number) => {
-  const price = Math.round(amount * 100);
-  console.log(price);
-  const res = await stripe.checkout.sessions.create({
-    currency: "usd",
-    payment_method_types: ["card"],
-    cancel_url: `${process.env.NEXT_PUBLIC_URL}/pricing?cancel=true`,
-    success_url: `${process.env.NEXT_PUBLIC_URL}/pricing?success=true`,
-    // redirect_on_completion: "always",
-    // return_url: `${process.env.NEXT_PUBLIC_URL}/pricing?success=true`,
-    // ui_mode: "embedded",
-    mode: "payment",
-    line_items: [
+export const confirmSubscription = async ({
+  paymentMethod,
+  customerId,
+  plan,
+}: ConfirmSubscription) => {
+  const priceOption: { [key: number]: string } = {
+    2: `${process.env.STARTER_PLAN_PRICE_ID}`,
+    3: `${process.env.PRO_PLAN_PRICE_ID}`,
+    4: `${process.env.UNLIMITED_PLAN_PRICE_ID}`,
+  };
+
+  const priceId = priceOption[plan];
+
+  // Step 1: Check if the customer already has an active subscription
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "active",
+    limit: 1,
+  });
+
+  if (subscriptions.data.length > 0) {
+    const existingSubscription = subscriptions.data[0];
+    console.log(existingSubscription);
+    // Optionally, you can cancel the subscription immediately:
+    await stripe.subscriptions.cancel(existingSubscription.id);
+  }
+
+  // Step 3: Attach the payment method to the customer
+  await stripe.paymentMethods.attach(paymentMethod, {
+    customer: customerId,
+  });
+
+  // Step 4: Set the default payment method for the customer
+  await stripe.customers.update(customerId, {
+    invoice_settings: {
+      default_payment_method: paymentMethod,
+    },
+  });
+
+  // Step 5: Create a new subscription
+  const subscription = await stripe.subscriptions.create({
+    customer: customerId,
+    items: [
       {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: "T-shirt",
-          },
-          unit_amount: price,
-        },
-        quantity: 1,
-        // price: amount.toString(),
+        price: priceId,
       },
     ],
   });
-  console.log(res);
-  return res.url;
+
+  return subscription.id;
+};
+
+export const backToFreePlan = async (customerId: string) => {
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "active",
+    limit: 1,
+  });
+
+  await stripe.subscriptions.cancel(subscriptions.data[0].id);
 };

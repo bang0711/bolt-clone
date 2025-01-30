@@ -10,6 +10,8 @@ type User = {
   name: string;
   picture: string;
   token: number;
+  customerId: string;
+  plan: number;
 };
 
 type WorkSpace = {
@@ -23,4 +25,12 @@ type WorkSpace = {
 type PaymentInfo = {
   clientSecret: string;
   paymentAmount: number;
-}
+  plan: number;
+  token: number;
+};
+
+type ConfirmSubscription = {
+  paymentMethod: string;
+  customerId: string;
+  plan: number;
+};

@@ -1,10 +1,6 @@
 import {
   useElements,
   useStripe,
-  CardNumberElement,
-  CardExpiryElement,
-  CardCvcElement,
-  ExpressCheckoutElement,
   PaymentElement,
 } from "@stripe/react-stripe-js";
 
@@ -19,22 +15,38 @@ import { Button } from "@/components/ui/button";
 
 import { Dispatch, SetStateAction, useState } from "react";
 
+import { confirmSubscription } from "@/lib/payment";
+
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+
 type Props = {
   isClientSecretCreated: boolean;
   setIsClientSecretCreated: Dispatch<SetStateAction<boolean>>;
-  amount: number;
+  user: User;
+  paymentInfo: PaymentInfo;
 };
 
 function PaymentModal({
   isClientSecretCreated,
   setIsClientSecretCreated,
-  amount = 0,
+  user,
+  paymentInfo,
 }: Props) {
+  const { clientSecret, paymentAmount, plan, token } = paymentInfo;
+
   const stripe = useStripe();
   const elements = useElements();
 
   const [message, setMessage] = useState<string | undefined>("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const updateToken = useMutation(api.users.updateToken);
+
+  const router = useRouter();
 
   // Handle card payment submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -45,38 +57,55 @@ function PaymentModal({
       // Make sure to disable form submission until Stripe.js has loaded.
       return;
     }
-
     setIsLoading(true);
 
-    const { error } = await stripe.confirmPayment({
+    // Trigger form validation and wallet collection
+    const { error: submitError } = await elements.submit();
+    if (submitError) {
+      console.error(submitError);
+      return;
+    }
+    // Confirm the payment and get the payment method
+    const paymentConfirmation = await stripe.confirmPayment({
       elements,
-      confirmParams: {
-        // Make sure to change this to your payment completion page
-        return_url: "http://localhost:3000",
-        payment_method_data: {
-          allow_redisplay: "unspecified",
-          billing_details: {
-            email: "never",
-
-            name: "never",
-            phone: "never",
-          },
-        },
-      },
+      clientSecret: clientSecret,
+      redirect: "if_required",
     });
 
-    // This point will only be reached if there is an immediate error when
-    // confirming the payment. Otherwise, your customer will be redirected to
-    // your `return_url`. For some payment methods like iDEAL, your customer will
-    // be redirected to an intermediate site first to authorize the payment, then
-    // redirected to the `return_url`.
-    if (error.type === "card_error" || error.type === "validation_error") {
-      setMessage(error.message);
-    } else {
-      setMessage("An unexpected error occurred.");
+    if (paymentConfirmation.error) {
+      setMessage(paymentConfirmation.error.message);
+      setIsLoading(false);
+      return;
     }
 
-    setIsLoading(false);
+    // After successful confirmation, pass the payment method to the backend
+    const paymentMethodId = paymentConfirmation.paymentIntent?.payment_method;
+
+    if (paymentMethodId) {
+      try {
+        await confirmSubscription({
+          paymentMethod: paymentMethodId.toString(),
+          customerId: user.customerId,
+          plan,
+        });
+
+        await updateToken({
+          userId: user._id as Id<"users">,
+          plan,
+          token,
+        });
+
+        setIsClientSecretCreated(false);
+
+        router.refresh();
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      setMessage("Payment method not found");
+    }
   };
 
   return (
@@ -95,14 +124,6 @@ function PaymentModal({
             options={{
               layout: "auto",
               paymentMethodOrder: ["Card"], // Only card method is allowed
-              fields: {
-                billingDetails: {
-                  email: "never",
-                  address: "never",
-                  name: "never",
-                  phone: "never",
-                },
-              },
             }}
           />
           <Button
@@ -112,9 +133,9 @@ function PaymentModal({
             className="mt-4 w-full"
           >
             {isLoading ? (
-              <div className="spinner" id="spinner"></div>
+              <Loader2 className="animate-spin" />
             ) : (
-              `Pay $${amount}`
+              `Pay $${paymentAmount}`
             )}
           </Button>
           {/* Show any error or success messages */}

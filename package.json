@@ -48,5 +48,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.1.5",
     "@eslint/eslintrc": "^3"
-  }
+  },
+  "trustedDependencies": [
+    "es5-ext"
+  ]
 }
